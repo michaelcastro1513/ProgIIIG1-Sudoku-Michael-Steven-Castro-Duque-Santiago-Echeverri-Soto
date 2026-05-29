@@ -45,3 +45,45 @@ if not unassigned:
 if verbose: print("\n sudoku resuelto")
 return True
 var = min(unassigned, key=lambda v:len(domains[v]))
+if verbose: print('  '*depth + f"→ {var} ({len(domains[var])})")
+backup = {k:set(domains[k]) for k in domains}
+for val in sorted(domains[var]):
+if verbose: print('  '*depth + f"  probando {var}={val}")
+domains[var]={val}
+if propagate(domains) and solve(domains,depth+1,verbose):
+return True
+domains.update(backup)
+if verbose: print('  '*depth + f"  backtrack {var}")
+return False
+def generate_full_board():
+grid = [[0]*9 for _ in range(9)]
+def bt(pos):
+if pos==81: 
+return True
+r,c = divmod(pos,9)
+nums = list(range(1,10))
+random.shuffle(nums)
+for n in nums:
+if all(grid[r][x]!=n for x in range(9)) and all(grid[x][c]!=n for x in range(9)) and all(grid[r//3*3+i][c//3*3+j]!=n for i in range(3) for j in range(3)):
+grid[r][c]=n
+if bt(pos+1): 
+return True
+grid[r][c]=0
+return False
+bt(0)
+return grid
+def generate_puzzle(difficulty):
+clues = {"muy facil":42,"facil":37,"medio":32,"dificil":27,"imposible":22}
+num_clues = clues.get(difficulty.lower().replace(" ",""),35)
+solved = generate_full_board()
+puzzle = [row[:] for row in solved]
+cells = list(range(81))
+random.shuffle(cells)
+for i in range(81-num_clues):
+r,c = divmod(cells[i],9)
+puzzle[r][c] = 0
+return puzzle, solved
+def print_board(grid):
+print("    A B C D E F G H I")
+print("  +-------+-------+-------+")
+for i in range(9):
