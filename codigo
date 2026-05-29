@@ -87,3 +87,36 @@ def print_board(grid):
 print("    A B C D E F G H I")
 print("  +-------+-------+-------+")
 for i in range(9):
+line = f"{rows[i]} |"
+for j in range(9):
+cell = str(grid[i][j]) if grid[i][j] else "."
+line += f" {cell} "
+if j % 3 == 2:
+line += "|"
+print(line)
+if i % 3 == 2:
+print("  +-------+-------+-------+")
+print("  +-------+-------+-------+")
+def interactive_solve(puzzle, solution):
+grid = [row[:] for row in puzzle]
+print("\n modo resolver")
+print("ingresa: casilla valor  (ej: A5 7  o  B3 9)")
+print("casillas: A-I (columnas)  1-9 (filas)    o 'q' para salir\n")
+while True:
+print_board(grid)
+if all(all(cell != 0 for cell in row) for row in grid):
+print("\n resolviste el sudoku")
+break
+move = input("movimiento: ").strip().lower()
+if move == 'q': 
+break
+try:
+parts = move.split()
+if len(parts) != 2: 
+raise ValueError
+cell = parts[0].upper()
+val = int(parts[1])
+if len(cell) != 2 or cell[0] not in 'ABCDEFGHI' or cell[1] not in '123456789' or not (1<=val<=9):
+raise ValueError
+col = 'ABCDEFGHI'.index(cell[0])
+row = int(cell[1]) - 1
