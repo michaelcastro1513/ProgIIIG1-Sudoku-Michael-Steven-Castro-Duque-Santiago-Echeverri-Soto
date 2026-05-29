@@ -120,3 +120,51 @@ if len(cell) != 2 or cell[0] not in 'ABCDEFGHI' or cell[1] not in '123456789' or
 raise ValueError
 col = 'ABCDEFGHI'.index(cell[0])
 row = int(cell[1]) - 1
+if puzzle[row][col] != 0:
+print(" celda fija (no se puede cambiar)")
+continue
+if grid[row][col] != 0:
+print(" celda ya llena")
+continue
+if not all(grid[row][x]!=val for x in range(9)) or not all(grid[x][col]!=val for x in range(9)) or not all(grid[row//3*3+i][col//3*3+j]!=val for i in range(3) for j in range(3)):
+print(" movimiento invalido - viola reglas")
+continue
+if solution[row][col] != val:
+print(" numero incorrecto")
+continue
+grid[row][col] = val
+print("✓ Correcto")
+except:
+print(" formato invalido ejemplo: A5 7")
+def main():
+while True:
+print("\n sudoku csp")
+print("1 generar aleatorio")
+print("2 salir")
+opt = input("opcion: ").strip()
+if opt=="2": 
+break
+if opt!="1": 
+continue
+print("\ndificultad:")
+print("1 muy fácil   2 facil   3 medio   4 dificil   5 imposible")
+d = input("Elige (1-5): ").strip()
+diff_map = {"1":"muy facil","2":"facil","3":"medio","4":"dificil","5":"imposible"}
+difficulty = diff_map.get(d,"medio")
+print(f"\ngenerando {difficulty.upper()}...")
+puzzle,solution = generate_puzzle(difficulty)
+print_board(puzzle)
+print("\n1 resolver (jugar)")
+print("2 ver solucion")
+ch = input("elige (1-2): ").strip()
+if ch=="1":
+interactive_solve(puzzle,solution)
+elif ch=="2":
+print("\nr esolviendo con csp + backtracking")
+pstr = ''.join(str(cell) if cell else '.' for row in puzzle for cell in row)
+domains = create_domains(pstr)
+solve(domains,verbose=True)
+print("\n solución final:")
+print_board(solution)
+if __name__ == "__main__":
+main()
