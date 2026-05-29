@@ -1,4 +1,5 @@
 import random
+
 cols = "ABCDEFGHI"
 rows = "123456789"
 variables = [c+r for r in rows for c in cols]
@@ -6,165 +7,170 @@ units = []
 units += [[c+r for c in cols] for r in rows]
 units += [[c+r for r in rows] for c in cols]
 for i in range(3):
-for j in range(3):
-box = [cols[i*3+x]+rows[j*3+y] for y in range(3) for x in range(3)]
-units.append(box)
+    for j in range(3):
+        box = [cols[i*3+x]+rows[j*3+y] for y in range(3) for x in range(3)]
+        units.append(box)
+
 def create_domains(puzzle):
-puzzle = ''.join(c for c in puzzle if c in '0123456789.')
-domains = {v:set(range(1,10)) for v in variables}
-for i,c in enumerate(puzzle):
-if c in '123456789':
-domains[variables[i]] = {int(c)}
-return domains
+    puzzle = ''.join(c for c in puzzle if c in '0123456789.')
+    domains = {v:set(range(1,10)) for v in variables}
+    for i,c in enumerate(puzzle):
+        if c in '123456789':
+            domains[variables[i]] = {int(c)}
+    return domains
+
 def naked(domains, unit):
-for v in unit:
-if len(domains[v])==1:
-val = next(iter(domains[v]))
-for w in unit:
-if w!=v: domains[w].discard(val)
+    for v in unit:
+        if len(domains[v])==1:
+            val = next(iter(domains[v]))
+            for w in unit:
+                if w!=v: domains[w].discard(val)
+
 def hidden(domains, unit):
-for v in unit:
-if len(domains[v])>1:
-for cand in list(domains[v]):
-if sum(cand in domains[w] for w in unit)==1:
-domains[v]={cand}
-break
+    for v in unit:
+        if len(domains[v])>1:
+            for cand in list(domains[v]):
+                if sum(cand in domains[w] for w in unit)==1:
+                    domains[v]={cand}
+                    break
+
 def propagate(domains):
-changed=True
-while changed:
-changed=False
-for unit in units:
-naked(domains,unit)
-hidden(domains,unit)
-if any(len(domains[v])==0 for v in variables):
-return False
-return True
+    changed=True
+    while changed:
+        changed=False
+        for unit in units:
+            naked(domains,unit)
+            hidden(domains,unit)
+            if any(len(domains[v])==0 for v in variables):
+                return False
+    return True
+
 def solve(domains, depth=0, verbose=True):
-unassigned = [v for v in variables if len(domains[v])>1]
-if not unassigned:
-if verbose: print("\n sudoku resuelto")
-return True
-var = min(unassigned, key=lambda v:len(domains[v]))
-if verbose: print('  '*depth + f"→ {var} ({len(domains[var])})")
-backup = {k:set(domains[k]) for k in domains}
-for val in sorted(domains[var]):
-if verbose: print('  '*depth + f"  probando {var}={val}")
-domains[var]={val}
-if propagate(domains) and solve(domains,depth+1,verbose):
-return True
-domains.update(backup)
-if verbose: print('  '*depth + f"  backtrack {var}")
-return False
+    unassigned = [v for v in variables if len(domains[v])>1]
+    if not unassigned:
+        if verbose: print("\n=== SUDOKU RESUELTO EXITOSAMENTE ===")
+        return True
+    var = min(unassigned, key=lambda v:len(domains[v]))
+    if verbose: print('  '*depth + f"→ {var} ({len(domains[var])})")
+    backup = {k:set(domains[k]) for k in domains}
+    for val in sorted(domains[var]):
+        if verbose: print('  '*depth + f"  Probando {var}={val}")
+        domains[var]={val}
+        if propagate(domains) and solve(domains,depth+1,verbose):
+            return True
+        domains.update(backup)
+    if verbose: print('  '*depth + f"  ← Backtrack {var}")
+    return False
+
 def generate_full_board():
-grid = [[0]*9 for _ in range(9)]
-def bt(pos):
-if pos==81: 
-return True
-r,c = divmod(pos,9)
-nums = list(range(1,10))
-random.shuffle(nums)
-for n in nums:
-if all(grid[r][x]!=n for x in range(9)) and all(grid[x][c]!=n for x in range(9)) and all(grid[r//3*3+i][c//3*3+j]!=n for i in range(3) for j in range(3)):
-grid[r][c]=n
-if bt(pos+1): 
-return True
-grid[r][c]=0
-return False
-bt(0)
-return grid
+    grid = [[0]*9 for _ in range(9)]
+    def bt(pos):
+        if pos==81: return True
+        r,c = divmod(pos,9)
+        nums = list(range(1,10))
+        random.shuffle(nums)
+        for n in nums:
+            if all(grid[r][x]!=n for x in range(9)) and all(grid[x][c]!=n for x in range(9)) and all(grid[r//3*3+i][c//3*3+j]!=n for i in range(3) for j in range(3)):
+                grid[r][c]=n
+                if bt(pos+1): return True
+                grid[r][c]=0
+        return False
+    bt(0)
+    return grid
+
 def generate_puzzle(difficulty):
-clues = {"muy facil":42,"facil":37,"medio":32,"dificil":27,"imposible":22}
-num_clues = clues.get(difficulty.lower().replace(" ",""),35)
-solved = generate_full_board()
-puzzle = [row[:] for row in solved]
-cells = list(range(81))
-random.shuffle(cells)
-for i in range(81-num_clues):
-r,c = divmod(cells[i],9)
-puzzle[r][c] = 0
-return puzzle, solved
+    clues = {"muy facil":42,"facil":37,"medio":32,"dificil":27,"imposible":22}
+    num_clues = clues.get(difficulty.lower().replace(" ",""),35)
+    solved = generate_full_board()
+    puzzle = [row[:] for row in solved]
+    cells = list(range(81))
+    random.shuffle(cells)
+    for i in range(81-num_clues):
+        r,c = divmod(cells[i],9)
+        puzzle[r][c] = 0
+    return puzzle, solved
+
 def print_board(grid):
-print("    A B C D E F G H I")
-print("  +-------+-------+-------+")
-for i in range(9):
-line = f"{rows[i]} |"
-for j in range(9):
-cell = str(grid[i][j]) if grid[i][j] else "."
-line += f" {cell} "
-if j % 3 == 2:
-line += "|"
-print(line)
-if i % 3 == 2:
-print("  +-------+-------+-------+")
-print("  +-------+-------+-------+")
+    print("    A B C D E F G H I")
+    print("  +-------+-------+-------+")
+    for i in range(9):
+        line = f"{rows[i]} |"
+        for j in range(9):
+            cell = str(grid[i][j]) if grid[i][j] else "."
+            line += f" {cell} "
+            if j % 3 == 2:
+                line += "|"
+        print(line)
+        if i % 3 == 2:
+            print("  +-------+-------+-------+")
+    print("  +-------+-------+-------+")
+
 def interactive_solve(puzzle, solution):
-grid = [row[:] for row in puzzle]
-print("\n modo resolver")
-print("ingresa: casilla valor  (ej: A5 7  o  B3 9)")
-print("casillas: A-I (columnas)  1-9 (filas)    o 'q' para salir\n")
-while True:
-print_board(grid)
-if all(all(cell != 0 for cell in row) for row in grid):
-print("\n resolviste el sudoku")
-break
-move = input("movimiento: ").strip().lower()
-if move == 'q': 
-break
-try:
-parts = move.split()
-if len(parts) != 2: 
-raise ValueError
-cell = parts[0].upper()
-val = int(parts[1])
-if len(cell) != 2 or cell[0] not in 'ABCDEFGHI' or cell[1] not in '123456789' or not (1<=val<=9):
-raise ValueError
-col = 'ABCDEFGHI'.index(cell[0])
-row = int(cell[1]) - 1
-if puzzle[row][col] != 0:
-print(" celda fija (no se puede cambiar)")
-continue
-if grid[row][col] != 0:
-print(" celda ya llena")
-continue
-if not all(grid[row][x]!=val for x in range(9)) or not all(grid[x][col]!=val for x in range(9)) or not all(grid[row//3*3+i][col//3*3+j]!=val for i in range(3) for j in range(3)):
-print(" movimiento invalido - viola reglas")
-continue
-if solution[row][col] != val:
-print(" numero incorrecto")
-continue
-grid[row][col] = val
-print("✓ Correcto")
-except:
-print(" formato invalido ejemplo: A5 7")
+    grid = [row[:] for row in puzzle]
+    print("\n=== MODO RESOLVER ===")
+    print("Ingresa: CASILLA VALOR   (ej: A5 7  o  B3 9)")
+    print("Casillas: A-I (columnas)  1-9 (filas)   o 'q' para salir\n")
+    while True:
+        print_board(grid)
+        if all(all(cell != 0 for cell in row) for row in grid):
+            print("\n¡FELICIDADES! Has resuelto el Sudoku.")
+            break
+        move = input("Movimiento: ").strip().lower()
+        if move == 'q': break
+        try:
+            parts = move.split()
+            if len(parts) != 2: raise ValueError
+            cell = parts[0].upper()
+            val = int(parts[1])
+            if len(cell) != 2 or cell[0] not in 'ABCDEFGHI' or cell[1] not in '123456789' or not (1<=val<=9):
+                raise ValueError
+            col = 'ABCDEFGHI'.index(cell[0])
+            row = int(cell[1]) - 1
+            if puzzle[row][col] != 0:
+                print("❌ Celda fija (no se puede cambiar)")
+                continue
+            if grid[row][col] != 0:
+                print("❌ Celda ya llena")
+                continue
+            if not all(grid[row][x]!=val for x in range(9)) or not all(grid[x][col]!=val for x in range(9)) or not all(grid[row//3*3+i][col//3*3+j]!=val for i in range(3) for j in range(3)):
+                print("❌ Movimiento inválido - viola reglas")
+                continue
+            if solution[row][col] != val:
+                print("❌ Número incorrecto")
+                continue
+            grid[row][col] = val
+            print("✓ Correcto")
+        except:
+            print("❌ Formato inválido. Ejemplo: A5 7")
+
 def main():
-while True:
-print("\n sudoku csp")
-print("1 generar aleatorio")
-print("2 salir")
-opt = input("opcion: ").strip()
-if opt=="2": 
-break
-if opt!="1": 
-continue
-print("\ndificultad:")
-print("1 muy fácil   2 facil   3 medio   4 dificil   5 imposible")
-d = input("Elige (1-5): ").strip()
-diff_map = {"1":"muy facil","2":"facil","3":"medio","4":"dificil","5":"imposible"}
-difficulty = diff_map.get(d,"medio")
-print(f"\ngenerando {difficulty.upper()}...")
-puzzle,solution = generate_puzzle(difficulty)
-print_board(puzzle)
-print("\n1 resolver (jugar)")
-print("2 ver solucion")
-ch = input("elige (1-2): ").strip()
-if ch=="1":
-interactive_solve(puzzle,solution)
-elif ch=="2":
-print("\nr esolviendo con csp + backtracking")
-pstr = ''.join(str(cell) if cell else '.' for row in puzzle for cell in row)
-domains = create_domains(pstr)
-solve(domains,verbose=True)
-print("\n solución final:")
-print_board(solution)
+    while True:
+        print("\n=== SUDOKU CSP ===")
+        print("1. Generar aleatorio")
+        print("2. Salir")
+        opt = input("Opción: ").strip()
+        if opt=="2": break
+        if opt!="1": continue
+        print("\nDificultad:")
+        print("1. Muy fácil   2. Fácil   3. Medio   4. Difícil   5. Imposible")
+        d = input("Elige (1-5): ").strip()
+        diff_map = {"1":"muy facil","2":"facil","3":"medio","4":"dificil","5":"imposible"}
+        difficulty = diff_map.get(d,"medio")
+        print(f"\nGenerando {difficulty.upper()}...")
+        puzzle,solution = generate_puzzle(difficulty)
+        print_board(puzzle)
+        print("\n1. Resolver (jugar)")
+        print("2. Ver solución")
+        ch = input("Elige (1-2): ").strip()
+        if ch=="1":
+            interactive_solve(puzzle,solution)
+        elif ch=="2":
+            print("\nResolviendo con CSP + Backtracking...")
+            pstr = ''.join(str(cell) if cell else '.' for row in puzzle for cell in row)
+            domains = create_domains(pstr)
+            solve(domains,verbose=True)
+            print("\nSolución final:")
+            print_board(solution)
+
 if __name__ == "__main__":
-main()
+    main()
