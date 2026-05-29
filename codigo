@@ -1,1 +1,47 @@
-
+import random
+cols = "ABCDEFGHI"
+rows = "123456789"
+variables = [c+r for r in rows for c in cols]
+units = []
+units += [[c+r for c in cols] for r in rows]
+units += [[c+r for r in rows] for c in cols]
+for i in range(3):
+for j in range(3):
+box = [cols[i*3+x]+rows[j*3+y] for y in range(3) for x in range(3)]
+units.append(box)
+def create_domains(puzzle):
+puzzle = ''.join(c for c in puzzle if c in '0123456789.')
+domains = {v:set(range(1,10)) for v in variables}
+for i,c in enumerate(puzzle):
+if c in '123456789':
+domains[variables[i]] = {int(c)}
+return domains
+def naked(domains, unit):
+for v in unit:
+if len(domains[v])==1:
+val = next(iter(domains[v]))
+for w in unit:
+if w!=v: domains[w].discard(val)
+def hidden(domains, unit):
+for v in unit:
+if len(domains[v])>1:
+for cand in list(domains[v]):
+if sum(cand in domains[w] for w in unit)==1:
+domains[v]={cand}
+break
+def propagate(domains):
+changed=True
+while changed:
+changed=False
+for unit in units:
+naked(domains,unit)
+hidden(domains,unit)
+if any(len(domains[v])==0 for v in variables):
+return False
+return True
+def solve(domains, depth=0, verbose=True):
+unassigned = [v for v in variables if len(domains[v])>1]
+if not unassigned:
+if verbose: print("\n sudoku resuelto")
+return True
+var = min(unassigned, key=lambda v:len(domains[v]))
